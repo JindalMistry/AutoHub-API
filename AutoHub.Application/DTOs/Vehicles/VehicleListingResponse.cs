@@ -24,6 +24,8 @@ public class VehicleListingResponse
 
     public int Mileage { get; set; }
 
+    public string Transmission { get; set; } = string.Empty;
+
     public string? ThumbnailUrl { get; set; }
 
     public bool IsFavourite { get; set; }

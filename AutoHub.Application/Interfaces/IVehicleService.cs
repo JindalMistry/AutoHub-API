@@ -8,7 +8,9 @@ public interface IVehicleService
 
     Task<List<VehicleResponse>> GetMyVehiclesAsync(Guid userId);
 
-    Task<VehicleResponse> GetVehicleByIdAsync(Guid vehicleId);
+    Task<VehicleResponse> GetVehicleByIdAsync(Guid vehicleId, Guid userId);
+
+    Task<VehicleResponse> GetAnyVehicleAsync(Guid vehicleId);
 
     Task<VehicleResponse> UpdateVehicleAsync(CreateVehicleRequest request, Guid userId, Guid vehicleId);
 

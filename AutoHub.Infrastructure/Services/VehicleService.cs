@@ -1,4 +1,5 @@
-﻿using AutoHub.Application.DTOs.Vehicles;
+﻿using AutoHub.Application.DTOs.Dealers;
+using AutoHub.Application.DTOs.Vehicles;
 using AutoHub.Application.Exceptions;
 using AutoHub.Application.Interfaces;
 using AutoHub.Domain.Entities;
@@ -9,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.VisualBasic.FileIO;
 using System.Net.NetworkInformation;
+using System.Security.Cryptography.X509Certificates;
 
 namespace AutoHub.Infrastructure.Services;
 
@@ -85,7 +87,7 @@ public class VehicleService : IVehicleService
             Id = vehicle.Id,
             Title = vehicle.Title,
             Price = vehicle.Price,
-            Status = vehicle.Status
+            Status = vehicle.Status.ToString()
         };
     }
 
@@ -143,26 +145,35 @@ public class VehicleService : IVehicleService
                 Id = o.Id,
                 Title = o.Title,
                 Price = o.Price,
-                Status = o.Status,
+                Status = o.Status.ToString(),
                 Make = o.Make,
                 Model = o.Model,
-                Variant = o.Variant
+                Variant = o.Variant,
+                Mileage = o.Mileage,
+                Year = o.Year,
+                Transmission = o.Transmission.ToString(),
+                FuelType = o.FuelType.ToString(),
+                ThumbnailUrl = o.Images
+                    .OrderBy(o => o.DisplayOrder)
+                    .Select(o => o.ImageUrl)
+                    .FirstOrDefault()
             })
             .ToListAsync();
 
         return vehicles;
     }
 
-    public async Task<VehicleResponse> GetVehicleByIdAsync(Guid vehicleId)
+    public async Task<VehicleResponse> GetVehicleByIdAsync(Guid vehicleId, Guid userId)
     {
         var cacheKey = $"vehicle:{vehicleId}";
 
         var cachedData = await _cacheService.GetAsync<VehicleResponse>(cacheKey);
 
-        if (cachedData != null) return cachedData;
+        // if (cachedData != null) return cachedData;
         
         var vehicle = await _dbcontext.Vehicles
             .AsNoTracking()
+            .Include(o => o.Dealer)
             .FirstOrDefaultAsync(o => o.Id == vehicleId);
 
         if (vehicle == null)
@@ -176,13 +187,7 @@ public class VehicleService : IVehicleService
                 "Vehicle does not exist!");
         }
 
-        //var analytics = await _dbcontext.Analytics
-        //    .FirstOrDefaultAsync(o => o.VehicleId == vehicleId);
-
-        //if (analytics != null)
-        //{
-        //    analytics.ViewCount++;
-        //}
+        var isFav = await _dbcontext.Favourites.AnyAsync(o => o.UserId == userId && o.VehicleId == vehicle.Id);
 
         await _cacheService.IncrementAsync($"vehicle:{vehicleId}:views");
 
@@ -191,13 +196,68 @@ public class VehicleService : IVehicleService
             Id = vehicle.Id,
             Title = vehicle.Title,
             Price = vehicle.Price,
-            Status = vehicle.Status,
+            Status = vehicle.Status.ToString(),
             Make = vehicle.Make,
             Model = vehicle.Model,
-            Variant = vehicle.Variant
+            Variant = vehicle.Variant,
+            Mileage = vehicle.Mileage,
+            Year = vehicle.Year,
+            Transmission = vehicle.Transmission.ToString(),
+            FuelType = vehicle.FuelType.ToString(),
+            Dealer = new DealerResponse
+            {
+                BusinessName = vehicle.Dealer.BusinessName,
+                City = vehicle.Dealer.City,
+                Country = vehicle.Dealer.Country,
+                Id = vehicle.DealerId,
+                Phone = vehicle.Dealer.Phone,
+                Pincode = vehicle.Dealer.Pincode,
+                Status = vehicle.Dealer.Status
+            },
+            IsFavourite = isFav
         };
 
         await _cacheService.SetAsync<VehicleResponse>(cacheKey, response, TimeSpan.FromMinutes(10));
+
+        return response;
+    }
+
+    public async Task<VehicleResponse> GetAnyVehicleAsync(Guid vehicleId)
+    {
+        var vehicle = await _dbcontext.Vehicles
+            .AsNoTracking()
+            .Include(o => o.Dealer)
+            .FirstOrDefaultAsync(o => o.Id == vehicleId);
+
+        if (vehicle == null)
+        {
+            throw new NotFoundException("Vehicle does not exist!");
+        }
+
+        var response = new VehicleResponse
+        {
+            Id = vehicle.Id,
+            Title = vehicle.Title,
+            Price = vehicle.Price,
+            Status = vehicle.Status.ToString(),
+            Make = vehicle.Make,
+            Model = vehicle.Model,
+            Variant = vehicle.Variant,
+            Mileage = vehicle.Mileage,
+            Year = vehicle.Year,
+            Transmission = vehicle.Transmission.ToString(),
+            FuelType = vehicle.FuelType.ToString(),
+            Dealer = new DealerResponse
+            {
+                BusinessName = vehicle.Dealer.BusinessName,
+                City = vehicle.Dealer.City,
+                Country = vehicle.Dealer.Country,
+                Id = vehicle.DealerId,
+                Phone = vehicle.Dealer.Phone,
+                Pincode = vehicle.Dealer.Pincode,
+                Status = vehicle.Dealer.Status
+            }
+        };
 
         return response;
     }
@@ -298,7 +358,7 @@ public class VehicleService : IVehicleService
             Id = vehicle.Id,
             Title = vehicle.Title,
             Price = vehicle.Price,
-            Status = vehicle.Status,
+            Status = vehicle.Status.ToString(),
             Make = vehicle.Make,
             Model = vehicle.Model,
             Variant = vehicle.Variant
@@ -440,6 +500,7 @@ public class VehicleService : IVehicleService
                     Price = o.Price,
                     Year = o.Year,
                     Mileage = o.Mileage,
+                    Transmission = o.Transmission.ToString(),
 
                     ThumbnailUrl = o.Images
                         .OrderBy(i =>
