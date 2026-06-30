@@ -34,6 +34,14 @@ public class StorageService : IStorageService
             .WithObject(objectName));
     }
 
+    public async Task<bool> IsHealthyAsync(string BucketName, CancellationToken cancellationToken)
+    {
+        return await _minioClient.BucketExistsAsync(
+                new BucketExistsArgs()
+                    .WithBucket(BucketName),
+                cancellationToken);
+    }
+
     public async Task<string> UploadFileAsync(Stream stream, string fileName, string contentType, string folderName)
     {
         var objectName =
