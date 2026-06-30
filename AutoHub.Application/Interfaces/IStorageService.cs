@@ -9,4 +9,6 @@ public interface IStorageService
         string folderName);
 
     Task DeleteFileAsync(string objectName);
+
+    Task<bool> IsHealthyAsync(string BucketName, CancellationToken cancellationToken);
 }
