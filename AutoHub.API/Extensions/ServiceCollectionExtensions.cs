@@ -1,4 +1,5 @@
-﻿using AutoHub.Application.Configurations;
+﻿using AutoHub.API.Configurations;
+using AutoHub.Application.Configurations;
 using AutoHub.Application.Interfaces;
 using AutoHub.Infrastructure.Configuration;
 using AutoHub.Infrastructure.Services;
@@ -17,12 +18,17 @@ namespace AutoHub.API.Extensions
             services.AddScoped<IDealerService, DealerService>();
             services.AddScoped<IStorageService, StorageService>();
             services.AddScoped<IVehicleImageService, VehicleImageService>();
+            services.AddScoped<IFavouriteService, FavouriteService>();
             services.AddScoped<IReservationService, ReservationService>();
+            services.AddScoped<IInquiryService, InquiryService>();
             services.AddScoped<IBackgroundJobService, BackgroundJobService>();
             services.AddScoped<ICacheService, CacheService>();
+            services.AddScoped<IAnalyticsService, AnalyticsService>();
+            services.AddScoped<IAdminService, AdminService>();
 
             services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
             services.Configure<MinioSettings>(configuration.GetSection("Minio"));
+            services.Configure<HangfireSettings>(configuration.GetSection("Hangfire"));
 
             return services;
         }
