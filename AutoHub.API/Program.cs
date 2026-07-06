@@ -1,13 +1,18 @@
+using AutoHub.API.Configurations;
 using AutoHub.API.Extensions;
+using AutoHub.API.HealthChecks;
 using AutoHub.API.Middleware;
 using AutoHub.Infrastructure.BackgroundJobs;
 using AutoHub.Infrastructure.Persistance;
 using Hangfire;
+using Hangfire.Dashboard.BasicAuthorization;
 using Hangfire.PostgreSql;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using Serilog;
 using StackExchange.Redis;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +24,21 @@ builder.Services.AddSerilog();
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateLogger();
+
+builder.Host.UseSerilog((context, configuration) =>
+{
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .Enrich.FromLogContext()
+
+        .WriteTo.Console()
+
+        .WriteTo.File(
+            Path.Combine(AppContext.BaseDirectory, "Logs", "log-.txt"),
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 30,
+            shared: true);
+});
 
 // Swagger
 builder.Services.AddSwaggerGen(options =>
@@ -79,14 +99,46 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(
 // Dependency Injection
 builder.Services.AddApplicationServices(builder.Configuration);
 
+//Rate Limiter
+builder.Services.AddRateLimiterService();
+
 // Jwt Configuaration
 builder.Services.AddJwtAuthentication(
     builder.Configuration);
 
 
+// CORS Management
+
+var origins = "DevCors";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: origins, policy =>
+    {
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+
+// Health Checks
+
+builder.Services.AddHealthChecks()
+    .AddNpgSql(
+        builder.Configuration.GetConnectionString("DefaultConnection")!,
+        name: "postgres")
+    .AddRedis(
+        builder.Configuration["Redis:ConnectionString"]!,
+        name: "redis")
+    .AddCheck<MinioHealthCheck>("minio");
+
+
+// BUILDER END
+
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
     app.UseSwaggerUI(); // Access at /swagger/index.html
@@ -94,9 +146,43 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseHangfireDashboard("/hangfire");
+app.UseCors(origins);
 
-//HangfireJobRegistrar.Register();
+var hangfireSettings = builder.Configuration
+    .GetSection("Hangfire")
+    .Get<HangfireSettings>();
+
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization =
+    [
+        new BasicAuthAuthorizationFilter(
+            new BasicAuthAuthorizationFilterOptions
+            {
+                RequireSsl = false,
+                SslRedirect = false,
+                LoginCaseSensitive = true,
+                Users =
+                [
+                    new BasicAuthAuthorizationUser
+                    {
+                        Login = hangfireSettings!.Username,
+                        PasswordClear = hangfireSettings.Password
+                    }
+                ]
+            })
+    ]
+});
+
+HangfireJobRegistrar.Register();
+
+app.UseSerilogRequestLogging(options =>
+{
+    options.MessageTemplate =
+        "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+});
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 
@@ -106,21 +192,33 @@ app.UseMiddleware<ExceptionMiddleware>();
 
 app.MapControllers();
 
-using (var scope = app.Services.CreateScope())
+app.MapHealthChecks("/health", new HealthCheckOptions
 {
-    var dbContext = scope.ServiceProvider
-        .GetRequiredService<ApplicationDbcontext>();
-
-    try
+    ResponseWriter = async (context, report) =>
     {
-        var canConnect = dbContext.Database.CanConnect();
+        context.Response.ContentType = "application/json";
 
-        Log.Information(canConnect ? "Database connection successful" : "Error in connecting with DB");
+        var response = new
+        {
+            Status = report.Status.ToString(),
+            TotalDuration = report.TotalDuration,
+            Checks = report.Entries.Select(entry => new
+            {
+                Name = entry.Key,
+                Status = entry.Value.Status.ToString(),
+                Description = entry.Value.Description,
+                Duration = entry.Value.Duration
+            })
+        };
+
+        await context.Response.WriteAsync(
+            JsonSerializer.Serialize(
+                response,
+                new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                }));
     }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Database error: {ex.Message}");
-    }
-}
+});
 
 app.Run();
