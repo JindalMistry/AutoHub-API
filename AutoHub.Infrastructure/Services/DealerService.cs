@@ -8,16 +8,19 @@ using System.Collections.Generic;
 using System.Text;
 using AutoHub.Domain.Entities;
 using AutoHub.Domain.Enums;
+using Microsoft.Extensions.Logging;
 
 namespace AutoHub.Infrastructure.Services;
 
 public class DealerService : IDealerService
 {
     private readonly ApplicationDbcontext _dbContext;
+    private readonly ILogger<DealerService> _logger;
     
-    public DealerService (ApplicationDbcontext dbcontext) 
+    public DealerService (ApplicationDbcontext dbcontext, ILogger<DealerService> logger) 
     { 
         _dbContext = dbcontext;
+        _logger = logger;
     }
 
     public async Task ApproveDealerAsync(Guid dealerId, Guid adminUserId)
@@ -42,6 +45,11 @@ public class DealerService : IDealerService
         dealer.User.Role = UserRole.Dealer;
 
         await _dbContext.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Admin {AdminId} approved dealer {DealerId}.",
+            adminUserId,
+            dealerId);
     }
 
     public async Task<DealerResponse> CreateDealerProfileAsync(CreateDealerProfileRequest request, Guid userId)
@@ -92,12 +100,16 @@ public class DealerService : IDealerService
             {
                 Id = o.Id,
                 BusinessName = o.BusinessName,
-                Status = o.Status
+                Status = o.Status,
+                City = o.City,
+                Country = o.Country,
+                Phone = o.Phone,
+                Pincode = o.Pincode
             })
             .ToListAsync();
     }
 
-    public async Task RejectDealerAsync(Guid dealerId)
+    public async Task RejectDealerAsync(Guid dealerId, Guid adminId)
     {
         var dealer = await _dbContext.Dealers.FirstOrDefaultAsync(o => o.Id == dealerId);
 
@@ -109,5 +121,10 @@ public class DealerService : IDealerService
         dealer.Status = DealerStatus.Rejected;
 
         await _dbContext.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Admin {AdminId} rejected dealer {DealerId}.",
+            adminId,
+            dealerId);
     }
 }
