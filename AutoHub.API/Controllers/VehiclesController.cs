@@ -4,6 +4,7 @@ using AutoHub.Application.Interfaces;
 using AutoHub.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
 namespace AutoHub.API.Controllers;
@@ -55,7 +56,11 @@ public class VehiclesController : ControllerBase
     [HttpGet("{vehicleId}")]
     public async Task<IActionResult> GetVehicleById(Guid vehicleId)
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var userId = Guid.TryParse(
+                User.FindFirstValue(ClaimTypes.NameIdentifier),
+                out var parsedUserId)
+                    ? parsedUserId
+                    : (Guid?)null;
 
         var vehicle = await _vehicleService
             .GetVehicleByIdAsync(vehicleId, userId);
@@ -147,9 +152,14 @@ public class VehiclesController : ControllerBase
     [HttpPut("{vehicleId}/unpublish")]
     public async Task<IActionResult> UnpublishVehicle(Guid vehicleId)
     {
+        var adminId = Guid.Parse(
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier)!);
+
         await _vehicleService
             .UnpublishVehicleAsync(
-                vehicleId);
+                vehicleId,
+                adminId);
 
         return Ok(new ApiResponse<object>
         {
@@ -158,6 +168,7 @@ public class VehiclesController : ControllerBase
         });
     }
 
+    [EnableRateLimiting("search")]
     [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> SearchVehicles([FromQuery] VehicleSearchRequest request)
