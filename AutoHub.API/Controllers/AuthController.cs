@@ -2,6 +2,7 @@
 using AutoHub.Application.DTOs.Auth;
 using AutoHub.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace AutoHub.API.Controllers;
 
@@ -16,6 +17,7 @@ public class AuthController : ControllerBase
         _authService = authService;
     }
 
+    [EnableRateLimiting("register")]
     [HttpPost("register")]
     public async Task<IActionResult> Register(
     RegisterRequest request)
@@ -30,6 +32,7 @@ public class AuthController : ControllerBase
         });
     }
 
+    [EnableRateLimiting("login")]
     [HttpPost("login")]
     public async Task<IActionResult> Login(
     LoginRequest request)
