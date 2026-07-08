@@ -66,7 +66,9 @@ public class DealersController : ControllerBase
     [HttpPut("{id}/reject")]
     public async Task<IActionResult> RejectDealer(Guid id)
     {
-        await _dealerService.RejectDealerAsync(id);
+        var adminId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        await _dealerService.RejectDealerAsync(id, adminId);
 
         return Ok(new ApiResponse<object>
         {
