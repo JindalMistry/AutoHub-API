@@ -8,7 +8,7 @@ public interface IVehicleService
 
     Task<List<VehicleResponse>> GetMyVehiclesAsync(Guid userId);
 
-    Task<VehicleResponse> GetVehicleByIdAsync(Guid vehicleId, Guid userId);
+    Task<VehicleResponse> GetVehicleByIdAsync(Guid vehicleId, Guid? userId);
 
     Task<VehicleResponse> GetAnyVehicleAsync(Guid vehicleId);
 
@@ -18,7 +18,7 @@ public interface IVehicleService
 
     Task DeleteVehicleAsync(Guid vehicleId, Guid userId);
 
-    Task UnpublishVehicleAsync(Guid vehicleId);
+    Task UnpublishVehicleAsync(Guid vehicleId, Guid adminId);
 
     Task<PaginatedResponse<VehicleListingResponse>> SearchVehiclesAsync(VehicleSearchRequest request);
 
