@@ -13,5 +13,5 @@ public interface IDealerService
 
     Task<List<DealerResponse>> GetPendingDealersAsync();
 
-    Task RejectDealerAsync(Guid dealerId);
+    Task RejectDealerAsync(Guid dealerId, Guid adminId);
 }
