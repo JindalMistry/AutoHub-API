@@ -8,6 +8,7 @@ using AutoHub.Infrastructure.Persistance;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualBasic.FileIO;
 using System.Net.NetworkInformation;
 using System.Security.Cryptography.X509Certificates;
@@ -18,11 +19,16 @@ public class VehicleService : IVehicleService
 {
     private readonly ApplicationDbcontext _dbcontext;
     private readonly ICacheService _cacheService;
+    private readonly ILogger<VehicleService> _logger;
 
-    public VehicleService(ApplicationDbcontext dbcontext, ICacheService cacheService)
+    public VehicleService(
+        ApplicationDbcontext dbcontext, 
+        ICacheService cacheService, 
+        ILogger<VehicleService> logger)
     {
         _dbcontext = dbcontext;
         _cacheService = cacheService;
+        _logger = logger;
     }
 
     public async Task<VehicleResponse> CreateVehicleAsync(CreateVehicleRequest request, Guid userId)
@@ -81,6 +87,11 @@ public class VehicleService : IVehicleService
         _dbcontext.Analytics.Add(vehicleAnalytics);
 
         await _dbcontext.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Dealer {DealerId} created vehicle {VehicleId}.",
+            dealer.Id,
+            vehicle.Id);
 
         return new VehicleResponse
         {
@@ -163,13 +174,25 @@ public class VehicleService : IVehicleService
         return vehicles;
     }
 
-    public async Task<VehicleResponse> GetVehicleByIdAsync(Guid vehicleId, Guid userId)
+    public async Task<VehicleResponse> GetVehicleByIdAsync(Guid vehicleId, Guid? userId)
     {
+        async Task<bool> IsFavourite(Guid vId, Guid? uId)
+        {
+            return await _dbcontext.Favourites.AnyAsync(o => o.UserId == uId&& o.VehicleId == vId);
+        }
+
         var cacheKey = $"vehicle:{vehicleId}";
 
         var cachedData = await _cacheService.GetAsync<VehicleResponse>(cacheKey);
 
-        // if (cachedData != null) return cachedData;
+        if (cachedData != null) 
+        {
+            await _cacheService.IncrementAsync($"vehicle:{vehicleId}:views");
+
+            if (userId.HasValue) cachedData.IsFavourite = await IsFavourite(vehicleId, userId);
+
+            return cachedData;
+        }
         
         var vehicle = await _dbcontext.Vehicles
             .AsNoTracking()
@@ -186,8 +209,6 @@ public class VehicleService : IVehicleService
             throw new NotFoundException(
                 "Vehicle does not exist!");
         }
-
-        var isFav = await _dbcontext.Favourites.AnyAsync(o => o.UserId == userId && o.VehicleId == vehicle.Id);
 
         await _cacheService.IncrementAsync($"vehicle:{vehicleId}:views");
 
@@ -214,10 +235,16 @@ public class VehicleService : IVehicleService
                 Pincode = vehicle.Dealer.Pincode,
                 Status = vehicle.Dealer.Status
             },
-            IsFavourite = isFav
+            IsFavourite = false
         };
 
         await _cacheService.SetAsync<VehicleResponse>(cacheKey, response, TimeSpan.FromMinutes(10));
+
+        var IsFav = false;
+        
+        if (userId.HasValue) IsFav = await IsFavourite(vehicleId, userId);
+
+        response.IsFavourite = IsFav;
 
         return response;
     }
@@ -283,13 +310,18 @@ public class VehicleService : IVehicleService
 
         await _dbcontext.SaveChangesAsync();
 
+        _logger.LogInformation(
+            "Admin {AdminId} published vehicle {VehicleId}.",
+            userId,
+            vehicle.Id);
+
         var cachedKey = $"vehicle:{vehicleId}";
         await _cacheService.RemoveAsync(cachedKey);
 
         await _cacheService.RemoveAsync("vehicle-filter-options");
     }
 
-    public async Task UnpublishVehicleAsync(Guid vehicleId)
+    public async Task UnpublishVehicleAsync(Guid vehicleId, Guid adminId)
     {
         var vehicle = await _dbcontext.Vehicles
             .FirstOrDefaultAsync(o => o.Id == vehicleId);
@@ -311,6 +343,11 @@ public class VehicleService : IVehicleService
         vehicle.ApprovedByUserId = null;
 
         await _dbcontext.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Admin {AdminId} published vehicle {VehicleId}.",
+            adminId,
+            vehicle.Id);
 
         var cachedKey = $"vehicle:{vehicleId}";
         await _cacheService.RemoveAsync(cachedKey);
