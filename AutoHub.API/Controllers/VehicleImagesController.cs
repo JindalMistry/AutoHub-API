@@ -49,7 +49,6 @@ public class VehicleImagesController : ControllerBase
         });
     }
 
-    [Authorize]
     [HttpGet("{vehicleId}/images")]
     public async Task<IActionResult> GetImages(Guid vehicleId)
     {
