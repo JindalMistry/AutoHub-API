@@ -16,7 +16,6 @@ namespace AutoHub.API.Extensions
             services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
             services.AddScoped<IVehicleService, VehicleService>();
             services.AddScoped<IDealerService, DealerService>();
-            services.AddScoped<IStorageService, StorageService>();
             services.AddScoped<IVehicleImageService, VehicleImageService>();
             services.AddScoped<IFavouriteService, FavouriteService>();
             services.AddScoped<IReservationService, ReservationService>();
@@ -26,8 +25,20 @@ namespace AutoHub.API.Extensions
             services.AddScoped<IAnalyticsService, AnalyticsService>();
             services.AddScoped<IAdminService, AdminService>();
 
+            var storageSettings = configuration.GetSection("Storage").Get<StorageSettings>();
+
+            if (storageSettings!.Provider == "MinIO")
+            {
+                services.AddScoped<IStorageService, MinIOStorageService>();
+            }
+            else if (storageSettings.Provider == "S3")
+            {
+                services.AddScoped<IStorageService, S3StorageService>();
+            }
+
             services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
             services.Configure<MinioSettings>(configuration.GetSection("Minio"));
+            services.Configure<StorageSettings>(configuration.GetSection("Storage"));
             services.Configure<HangfireSettings>(configuration.GetSection("Hangfire"));
 
             return services;
