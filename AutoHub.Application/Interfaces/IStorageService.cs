@@ -10,5 +10,9 @@ public interface IStorageService
 
     Task DeleteFileAsync(string objectName);
 
-    Task<bool> IsHealthyAsync(string BucketName, CancellationToken cancellationToken);
+    Task<string> GetPresignedUrlAsync(
+        string objectName,
+        TimeSpan expiry);
+
+    Task<bool> IsHealthyAsync(string bucketName, CancellationToken cancellationToken);
 }
