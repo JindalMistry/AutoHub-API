@@ -14,10 +14,15 @@ public class FavouriteService : IFavouriteService
 {
     private readonly ApplicationDbcontext _dbcontext;
     private readonly ICacheService _cacheService;
-    public FavouriteService(ApplicationDbcontext dbcontext, ICacheService cacheService)
+    private readonly IStorageService _storageService;
+    public FavouriteService(
+        ApplicationDbcontext dbcontext, 
+        ICacheService cacheService,
+        IStorageService storageService)
     {
         _dbcontext = dbcontext;
         _cacheService = cacheService;
+        _storageService = storageService;
     }
 
     public async Task AddFavouriteAsync(Guid vehicleId, Guid userId)
@@ -140,6 +145,15 @@ public class FavouriteService : IFavouriteService
                             .FirstOrDefault()
                 })
             .ToListAsync();
+
+        foreach ( var vehicle in vehicles )
+        {
+            var url = vehicle.ThumbnailUrl;
+
+            if (url == null) continue;
+
+            vehicle.ThumbnailUrl = await _storageService.GetPresignedUrlAsync(url, TimeSpan.FromHours(1));
+        }
 
         return new PaginatedResponse<VehicleListingResponse>
         {

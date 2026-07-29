@@ -17,10 +17,14 @@ namespace AutoHub.Infrastructure.Services;
 public class AdminService : IAdminService
 {
     private readonly ApplicationDbcontext _dbcontext;
+    private readonly IStorageService _storageService;
 
-    public AdminService(ApplicationDbcontext dbcontext)
+    public AdminService(
+        ApplicationDbcontext dbcontext,
+        IStorageService storageService)
     {
         _dbcontext = dbcontext;
+        _storageService = storageService;
     }
 
     public async Task<AdminDashboardResponse> GetDashboardAsync()
@@ -215,6 +219,15 @@ public class AdminService : IAdminService
             })
             .ToListAsync();
 
+        foreach(var vehicle in response)
+        {
+            var url = vehicle.Vehicle.ThumbnailUrl;
+
+            if (url == null) continue;
+
+            vehicle.Vehicle.ThumbnailUrl = await _storageService.GetPresignedUrlAsync(url, TimeSpan.FromMinutes(60));
+        }
+
         return response;
     }
 
@@ -241,6 +254,16 @@ public class AdminService : IAdminService
                 Transmission = o.Transmission.ToString()
             })
             .ToListAsync();
+
+        foreach (var data in response)
+        {
+            var url = data.ThumbnailUrl;
+
+            if (url == null) continue;
+
+            data.ThumbnailUrl = await _storageService.GetPresignedUrlAsync(url, TimeSpan.FromMinutes(60));
+        }
+
         return response!;
     }
 }

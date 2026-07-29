@@ -14,10 +14,16 @@ public class AnalyticsService : IAnalyticsService
 
     private readonly ICacheService _cacheService;
 
-    public AnalyticsService(ApplicationDbcontext dbcontext, ICacheService cacheService)
+    private readonly IStorageService _storageService;
+
+    public AnalyticsService(
+        ApplicationDbcontext dbcontext, 
+        ICacheService cacheService,
+        IStorageService storageService)
     {
         _dbcontext = dbcontext;
         _cacheService = cacheService;
+        _storageService = storageService;
     }
     public async Task<List<VehicleListingResponse>> GetTrendingVehiclesAsync()
     {
@@ -53,6 +59,15 @@ public class AnalyticsService : IAnalyticsService
             })
             .Take(10)
             .ToListAsync();
+
+        foreach (var data in response)
+        {
+            var url = data.ThumbnailUrl;
+
+            if (url == null) continue;
+
+            data.ThumbnailUrl = await _storageService.GetPresignedUrlAsync(url, TimeSpan.FromMinutes(60));
+        }
 
         await _cacheService.SetAsync<List<VehicleListingResponse>>("trending-vehicles", response, TimeSpan.FromHours(1));
 

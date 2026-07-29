@@ -1,4 +1,5 @@
-﻿using AutoHub.Application.DTOs.Dealers;
+﻿using Amazon.Runtime.Internal.Endpoints.StandardLibrary;
+using AutoHub.Application.DTOs.Dealers;
 using AutoHub.Application.DTOs.Vehicles;
 using AutoHub.Application.Exceptions;
 using AutoHub.Application.Interfaces;
@@ -20,15 +21,18 @@ public class VehicleService : IVehicleService
     private readonly ApplicationDbcontext _dbcontext;
     private readonly ICacheService _cacheService;
     private readonly ILogger<VehicleService> _logger;
+    private readonly IStorageService _storageService;
 
     public VehicleService(
         ApplicationDbcontext dbcontext, 
         ICacheService cacheService, 
-        ILogger<VehicleService> logger)
+        ILogger<VehicleService> logger,
+        IStorageService storageService)
     {
         _dbcontext = dbcontext;
         _cacheService = cacheService;
         _logger = logger;
+        _storageService = storageService;
     }
 
     public async Task<VehicleResponse> CreateVehicleAsync(CreateVehicleRequest request, Guid userId)
@@ -170,6 +174,12 @@ public class VehicleService : IVehicleService
                     .FirstOrDefault()
             })
             .ToListAsync();
+
+        foreach (var item in vehicles)
+        {
+            var url = item.ThumbnailUrl;
+            if (url != null) item.ThumbnailUrl = await _storageService.GetPresignedUrlAsync(url, TimeSpan.FromHours(1));
+        }
 
         return vehicles;
     }
@@ -547,6 +557,13 @@ public class VehicleService : IVehicleService
                         .FirstOrDefault()
                 })
             .ToListAsync();
+
+        foreach (var vehicle in vehicles)
+        {
+            var url = vehicle.ThumbnailUrl;
+
+            if (url != null) vehicle.ThumbnailUrl = await _storageService.GetPresignedUrlAsync(url, TimeSpan.FromHours(1));
+        }
 
         return new PaginatedResponse<VehicleListingResponse>
         {

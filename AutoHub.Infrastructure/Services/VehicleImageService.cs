@@ -14,11 +14,16 @@ public class VehicleImageService : IVehicleImageService
     private readonly ApplicationDbcontext _dbcontext;
     
     private readonly IStorageService _storageService;
+    private readonly ICacheService _cacheService;
 
-    public VehicleImageService(ApplicationDbcontext dbcontext, IStorageService storageService)
+    public VehicleImageService(
+        ApplicationDbcontext dbcontext, 
+        IStorageService storageService,
+        ICacheService cacheService)
     {
         _dbcontext = dbcontext;
         _storageService = storageService;
+        _cacheService = cacheService;
     }
 
     public async Task DeleteImageAsync(Guid imageId, Guid userId)
@@ -60,17 +65,35 @@ public class VehicleImageService : IVehicleImageService
 
     public async Task<List<VehicleImageResponse>> GetImagesAsync(Guid vehicleId)
     {
-        return await _dbcontext.VehicleImages
+        var cacheKey = $"{vehicleId}-images";
+
+        var cachedData = await _cacheService.GetAsync<List<VehicleImageResponse>>(cacheKey);
+
+        if (cachedData != null) return cachedData;
+
+        var images = await _dbcontext.VehicleImages
             .AsNoTracking()
             .Where(o => o.VehicleId == vehicleId)
             .OrderBy(o => o.DisplayOrder)
-            .Select(o => new VehicleImageResponse
-            {
-                Id = o.Id,
-                ImageUrl = o.ImageUrl,
-                DisplayOrder = o.DisplayOrder,
-            })
             .ToListAsync();
+
+        var response = new List<VehicleImageResponse>();
+
+        foreach (var image in images)
+        {
+            response.Add(new VehicleImageResponse
+            {
+                Id = image.Id,
+                ImageUrl = await _storageService.GetPresignedUrlAsync(
+                    image.ImageUrl,
+                    TimeSpan.FromMinutes(10)),
+                DisplayOrder = image.DisplayOrder
+            });
+        }
+
+        await _cacheService.SetAsync<List<VehicleImageResponse>>(cacheKey, response, TimeSpan.FromMinutes(10));
+
+        return response;
     }
 
     public async Task<List<VehicleImageResponse>> UploadImagesAsync(CreateVehicleImageRequest request)

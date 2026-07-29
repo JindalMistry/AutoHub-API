@@ -18,15 +18,18 @@ public class ReservationService : IReservationService
     private readonly ApplicationDbcontext _dbcontext;
     private readonly ICacheService _cacheService;
     private readonly ILogger<ReservationService> _logger;
+    private readonly IStorageService _storageService;
 
     public ReservationService(
         ApplicationDbcontext dbcontext, 
         ICacheService cacheService,
-        ILogger<ReservationService> logger)
+        ILogger<ReservationService> logger,
+        IStorageService storageService)
     {
         _dbcontext = dbcontext;
         _cacheService = cacheService;
         _logger = logger;
+        _storageService = storageService;
     }
 
     public async Task CancelReservationAsync(Guid reservationId)
@@ -192,6 +195,15 @@ public class ReservationService : IReservationService
             })
             .ToListAsync();
 
+        foreach (var data in items)
+        {
+            var url = data.Vehicle.ThumbnailUrl;
+
+            if (url == null) continue;
+
+            data.Vehicle.ThumbnailUrl = await _storageService.GetPresignedUrlAsync(url, TimeSpan.FromMinutes(60));
+        }
+
         return new PaginatedResponse<ReservationResponse>
         {
             TotalRecords = total,
@@ -214,7 +226,7 @@ public class ReservationService : IReservationService
                 .Where(o => o.Status == status);
         }
 
-        return await query
+        var items = await query
             .OrderByDescending(o => o.CreatedAt)
             .Select(o => new ReservationResponse
             {
@@ -243,6 +255,17 @@ public class ReservationService : IReservationService
                 }
             })
             .ToListAsync();
+
+        foreach (var data in items)
+        {
+            var url = data.Vehicle.ThumbnailUrl;
+
+            if (url == null) continue;
+
+            data.Vehicle.ThumbnailUrl = await _storageService.GetPresignedUrlAsync(url, TimeSpan.FromMinutes(60));
+        }
+
+        return items;
     }
 
     public async Task<ReservationResponse> GetReservationByIdAsync(Guid reservationId)
@@ -254,7 +277,7 @@ public class ReservationService : IReservationService
 
         if (reservation == null) throw new BadRequestException("Reservation does not exist!");
 
-        return new ReservationResponse
+        var response = new ReservationResponse
         {
             Id = reservation.Id,
             VehicleId = reservation.VehicleId,
@@ -280,5 +303,11 @@ public class ReservationService : IReservationService
                         .FirstOrDefault()
             }
         };
+
+        var url = response.Vehicle.ThumbnailUrl;
+
+        if(url != null) response?.Vehicle.ThumbnailUrl = await _storageService.GetPresignedUrlAsync(url, TimeSpan.FromHours(1));
+
+        return response;
     }
 }
