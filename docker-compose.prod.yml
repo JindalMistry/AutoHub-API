@@ -1,4 +1,15 @@
 services:
+  redis:
+    image: redis:7-alpine
+
+    container_name: autohub-redis
+
+    ports:
+      - "6379:6379"
+
+    volumes:
+      - redis-data:/data
+
   api:
     build:
       context: .
@@ -32,17 +43,6 @@ services:
 
     depends_on:
       - redis
-
-  redis:
-    image: redis:7-alpine
-
-    container_name: autohub-redis
-
-    ports:
-      - "6379:6379"
-
-    volumes:
-      - redis-data:/data
 
 volumes:
   redis-data:
