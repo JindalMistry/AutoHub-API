@@ -1,3 +1,4 @@
+using Amazon.S3;
 using AutoHub.API.Configurations;
 using AutoHub.API.Extensions;
 using AutoHub.API.HealthChecks;
@@ -106,6 +107,8 @@ builder.Services.AddRateLimiterService();
 builder.Services.AddJwtAuthentication(
     builder.Configuration);
 
+// AWS
+builder.Services.AddAwsServices(builder.Configuration);
 
 // CORS Management
 
