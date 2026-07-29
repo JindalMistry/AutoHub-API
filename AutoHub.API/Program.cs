@@ -134,7 +134,7 @@ builder.Services.AddHealthChecks()
     .AddRedis(
         builder.Configuration["Redis:ConnectionString"]!,
         name: "redis")
-    .AddCheck<MinioHealthCheck>("minio");
+    .AddCheck<StorageHealthCheck>("minio");
 
 
 // BUILDER END
