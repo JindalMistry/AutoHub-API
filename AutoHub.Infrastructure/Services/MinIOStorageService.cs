@@ -10,13 +10,13 @@ using System.Text;
 
 namespace AutoHub.Infrastructure.Services;
 
-public class StorageService : IStorageService
+public class MinIOStorageService : IStorageService
 {
     private readonly IMinioClient _minioClient;
 
     private readonly MinioSettings _settings;
 
-    public StorageService(IOptions<MinioSettings> settings)
+    public MinIOStorageService(IOptions<MinioSettings> settings)
     {
         _settings = settings.Value;
 
@@ -34,11 +34,16 @@ public class StorageService : IStorageService
             .WithObject(objectName));
     }
 
-    public async Task<bool> IsHealthyAsync(string BucketName, CancellationToken cancellationToken)
+    public Task<string> GetPresignedUrlAsync(string objectName, TimeSpan expiry)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task<bool> IsHealthyAsync(string bucketName, CancellationToken cancellationToken)
     {
         return await _minioClient.BucketExistsAsync(
                 new BucketExistsArgs()
-                    .WithBucket(BucketName),
+                    .WithBucket(bucketName),
                 cancellationToken);
     }
 
