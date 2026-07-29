@@ -37,7 +37,6 @@ namespace AutoHub.API.Extensions
             }
 
             services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
-            services.Configure<MinioSettings>(configuration.GetSection("Minio"));
             services.Configure<StorageSettings>(configuration.GetSection("Storage"));
             services.Configure<HangfireSettings>(configuration.GetSection("Hangfire"));
 
