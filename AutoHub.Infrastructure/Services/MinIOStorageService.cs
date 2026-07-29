@@ -14,9 +14,9 @@ public class MinIOStorageService : IStorageService
 {
     private readonly IMinioClient _minioClient;
 
-    private readonly MinioSettings _settings;
+    private readonly StorageSettings _settings;
 
-    public MinIOStorageService(IOptions<MinioSettings> settings)
+    public MinIOStorageService(IOptions<StorageSettings> settings)
     {
         _settings = settings.Value;
 
