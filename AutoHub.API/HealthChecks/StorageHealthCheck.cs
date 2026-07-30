@@ -1,6 +1,7 @@
 ﻿using AutoHub.Application.Interfaces;
 using AutoHub.Infrastructure.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 
 namespace AutoHub.API.HealthChecks
 {
@@ -11,10 +12,10 @@ namespace AutoHub.API.HealthChecks
 
         public StorageHealthCheck(
             IStorageService storageService, 
-            StorageSettings storageSettings)
+            IOptions<StorageSettings> storageSettings)
         {
             _storageService = storageService;
-            this.storageSettings = storageSettings;
+            this.storageSettings = storageSettings.Value;
         }
 
         public async Task<HealthCheckResult> CheckHealthAsync(
