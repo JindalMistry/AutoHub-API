@@ -44,5 +44,34 @@ services:
     depends_on:
       - redis
 
+  prometheus:
+    image: prom/prometheus:v3.5.0
+
+    container_name: autohub-prometheus
+
+    ports:
+      - "9090:9090"
+
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+    depends_on:
+      - api
+
+  grafana:
+    image: grafana/grafana:12.1.1
+
+    container_name: autohub-grafana
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - grafana-data:/var/lib/grafana
+
+    depends_on:
+      - prometheus
+
 volumes:
   redis-data:
+  grafana-data:
