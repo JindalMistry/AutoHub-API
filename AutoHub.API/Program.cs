@@ -114,16 +114,26 @@ builder.Services.AddAwsServices(builder.Configuration);
 
 // CORS Management
 
-var origins = "DevCors";
+var policyName = "CORSPolicy";
+
+var allowedOrigins = builder.Environment.IsDevelopment()
+    ? new[]
+    {
+        "http://localhost:5173"
+    }
+    : new[]
+    {
+        "https://autohub-app-theta.vercel.app"
+    };
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: origins, policy =>
+    options.AddPolicy(policyName, policy =>
     {
         policy
-            .AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader();
+            .WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
     });
 });
 
@@ -157,7 +167,7 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 
 app.UseHttpsRedirection();
 
-app.UseCors(origins);
+app.UseCors(policyName);
 
 app.UseSerilogRequestLogging(options =>
 {
