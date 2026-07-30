@@ -32,7 +32,7 @@ jobs:
           ls -la
       
       - name: Restore NuGet Packages
-        run: dotnet restore AutoHub.sln
+        run: dotnet restore AutoHub.slnx
 
       - name: Build Solution
         run: dotnet build AutoHub.slnx --configuration Release --no-restore
