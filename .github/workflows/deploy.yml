@@ -35,10 +35,10 @@ jobs:
         run: dotnet restore AutoHub.sln
 
       - name: Build Solution
-        run: dotnet build AutoHub.sln --configuration Release --no-restore
+        run: dotnet build AutoHub.slnx --configuration Release --no-restore
 
       - name: Check for Test Projects
-        run: dotnet test AutoHub.sln --configuration Release --no-build
+        run: dotnet test AutoHub.slnx --configuration Release --no-build
       
       - name: Test SSH Connection
         uses: appleboy/ssh-action@v1.2.2
