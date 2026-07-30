@@ -9,6 +9,7 @@ using Hangfire;
 using Hangfire.Dashboard.BasicAuthorization;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using Serilog;
@@ -134,7 +135,7 @@ builder.Services.AddHealthChecks()
     .AddRedis(
         builder.Configuration["Redis:ConnectionString"]!,
         name: "redis")
-    .AddCheck<StorageHealthCheck>("minio");
+    .AddCheck<StorageHealthCheck>("S3");
 
 
 // BUILDER END
@@ -186,6 +187,14 @@ app.UseSerilogRequestLogging(options =>
 });
 
 app.UseRateLimiter();
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor |
+    ForwardedHeaders.XForwardedProto
+});
+
+app.UseHttpsRedirection();
 
 app.UseAuthentication();
 
