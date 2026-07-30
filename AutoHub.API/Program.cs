@@ -15,6 +15,7 @@ using Microsoft.OpenApi;
 using Serilog;
 using StackExchange.Redis;
 using System.Text.Json;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -142,51 +143,11 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
+if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI(); // Access at /swagger/index.html
 }
-
-app.UseHttpsRedirection();
-
-app.UseCors(origins);
-
-var hangfireSettings = builder.Configuration
-    .GetSection("Hangfire")
-    .Get<HangfireSettings>();
-
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
-{
-    Authorization =
-    [
-        new BasicAuthAuthorizationFilter(
-            new BasicAuthAuthorizationFilterOptions
-            {
-                RequireSsl = false,
-                SslRedirect = false,
-                LoginCaseSensitive = true,
-                Users =
-                [
-                    new BasicAuthAuthorizationUser
-                    {
-                        Login = hangfireSettings!.Username,
-                        PasswordClear = hangfireSettings.Password
-                    }
-                ]
-            })
-    ]
-});
-
-HangfireJobRegistrar.Register();
-
-app.UseSerilogRequestLogging(options =>
-{
-    options.MessageTemplate =
-        "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
-});
-
-app.UseRateLimiter();
 
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
@@ -196,9 +157,21 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 
 app.UseHttpsRedirection();
 
+app.UseCors(origins);
+
+app.UseSerilogRequestLogging(options =>
+{
+    options.MessageTemplate =
+        "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+});
+
+app.UseHttpMetrics();
+
 app.UseAuthentication();
 
 app.UseAuthorization();
+
+app.UseRateLimiter();
 
 app.UseMiddleware<ExceptionMiddleware>();
 
@@ -232,5 +205,35 @@ app.MapHealthChecks("/health", new HealthCheckOptions
                 }));
     }
 });
+
+app.MapMetrics();
+
+var hangfireSettings = builder.Configuration
+    .GetSection("Hangfire")
+    .Get<HangfireSettings>();
+
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization =
+    [
+        new BasicAuthAuthorizationFilter(
+            new BasicAuthAuthorizationFilterOptions
+            {
+                RequireSsl = false,
+                SslRedirect = false,
+                LoginCaseSensitive = true,
+                Users =
+                [
+                    new BasicAuthAuthorizationUser
+                    {
+                        Login = hangfireSettings!.Username,
+                        PasswordClear = hangfireSettings.Password
+                    }
+                ]
+            })
+    ]
+});
+
+HangfireJobRegistrar.Register();
 
 app.Run();
