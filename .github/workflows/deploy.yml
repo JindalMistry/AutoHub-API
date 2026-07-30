@@ -1,0 +1,16 @@
+name: Autohub-API Deployment
+
+on:
+  push:
+    branches:
+      - 'release/*'
+  
+  workflow_dispatch:
+ 
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Say Hello
+        run: echo "Hello from Github Actions"
