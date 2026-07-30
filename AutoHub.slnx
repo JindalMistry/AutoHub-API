@@ -4,6 +4,10 @@
     <File Path="docker-compose.prod.yml" />
     <File Path="docker-compose.yml" />
   </Folder>
+  <Folder Name="/Solution Items/.github/" />
+  <Folder Name="/Solution Items/.github/workflows/">
+    <File Path="deploy.yml" />
+  </Folder>
   <Project Path="AutoHub.API/AutoHub.API.csproj" />
   <Project Path="AutoHub.Application/AutoHub.Application.csproj" />
   <Project Path="AutoHub.Domain/AutoHub.Domain.csproj" />
