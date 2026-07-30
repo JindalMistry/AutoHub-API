@@ -14,3 +14,11 @@ jobs:
     steps:
       - name: Say Hello
         run: echo "Hello from Github Actions"
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Verify Repository
+        run: |
+          pwd
+          ls -la
