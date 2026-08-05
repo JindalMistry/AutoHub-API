@@ -261,3 +261,118 @@ After the application starts, verify the following:
 | Health Check | `https://localhost:<port>/health` |
 | Hangfire | `https://localhost:<port>/hangfire` |
 | MinIO Console | `http://localhost:9001` |
+
+
+
+
+## 📊 Monitoring
+
+AutoHub includes a production-style monitoring setup to provide visibility into infrastructure health, application performance, and operational metrics.
+
+### CloudWatch
+
+AWS CloudWatch is used to monitor the EC2 instance.
+
+Monitored metrics include:
+
+- CPU Utilization
+- Memory Usage
+- Disk Usage
+- Disk I/O
+- Network Traffic
+
+CloudWatch Alarms can be configured to notify when resource utilization exceeds predefined thresholds.
+
+---
+
+### Prometheus
+
+The API exposes a `/metrics` endpoint using **prometheus-net**.
+
+Prometheus periodically scrapes application metrics, including:
+
+- HTTP Requests
+- Request Duration
+- Request Status Codes
+- ASP.NET Core Runtime Metrics
+- .NET Runtime Metrics
+
+---
+
+### Grafana
+
+Grafana is connected to Prometheus to visualize application metrics.
+
+Dashboards provide real-time insights into:
+
+- API Request Rate
+- Response Times
+- Error Rates
+- Runtime Metrics
+- Application Health
+
+---
+
+### Health Checks
+
+The API exposes a health endpoint:
+
+```
+/health
+```
+
+Health checks verify the availability of critical dependencies:
+
+- PostgreSQL
+- Redis
+- Object Storage (MinIO / Amazon S3)
+
+This endpoint is also used by the deployment pipeline to verify successful deployments.
+
+
+
+
+
+## 🚀 Continuous Integration & Deployment
+
+The project uses **GitHub Actions** to automate deployments to AWS EC2.
+
+### Deployment Workflow
+
+1. A push or merge to a `release/*` branch triggers the deployment workflow.
+2. GitHub Actions connects securely to the EC2 instance using SSH.
+3. The workflow switches to the appropriate release branch (if required).
+4. The latest source code is pulled from GitHub.
+5. Docker Compose rebuilds and starts the updated containers.
+6. The deployment pipeline waits for the application to start.
+7. A health check is executed against the `/health` endpoint.
+8. The deployment succeeds only if all health checks pass.
+
+---
+
+### Infrastructure
+
+The production environment includes:
+
+- GitHub Actions
+- AWS EC2
+- Docker Compose
+- Nginx Reverse Proxy
+- Let's Encrypt SSL
+- Health Check Validation
+
+This workflow enables zero manual deployment steps after code is merged into a release branch.
+
+
+
+```mermaid
+flowchart LR
+
+A[Push to release/*] --> B[GitHub Actions]
+B --> C[SSH into EC2]
+C --> D[Git Pull]
+D --> E[Docker Compose Build]
+E --> F[Start Containers]
+F --> G[Health Check]
+G --> H[Deployment Complete]
+```
