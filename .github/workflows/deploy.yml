@@ -62,7 +62,7 @@ jobs:
 
             git pull origin $BRANCH_NAME
 
-            docker compose -f docker-compose.prod.yml stop autohub-api
+            docker compose -f docker-compose.prod.yml stop api || true
 
             docker compose -f docker-compose.prod.yml up -d --build api
 
