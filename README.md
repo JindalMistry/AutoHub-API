@@ -40,11 +40,11 @@ https://autohub-app-theta.vercel.app
 
 Backend API
 
-https://autohub-demo.buckdns.org
+https://autohub-demo.duckdns.org
 
 Swagger
 
-https://autohub-demo.buckdns.org/swagger
+https://autohub-demo.duckdns.org/swagger
 
 
 
@@ -53,11 +53,15 @@ https://autohub-demo.buckdns.org/swagger
 
 ### Home
 
-(image)
+<img width="1917" height="968" alt="image" src="https://github.com/user-attachments/assets/b557d4b0-1c5d-489a-b159-0ff11763305b" />
+
 
 ### Vehicle Details
 
-(image)
+<img width="1901" height="868" alt="image" src="https://github.com/user-attachments/assets/2504bc97-aa83-432c-89fe-6bd96585ac24" />
+<img width="1897" height="871" alt="image" src="https://github.com/user-attachments/assets/4fdf5b54-d7ac-42c8-b7ba-150e24479e07" />
+<img width="1901" height="872" alt="image" src="https://github.com/user-attachments/assets/8b508f41-6c3a-4942-92d6-63d0d29f25e0" />
+
 
 ### Swagger
 
@@ -108,7 +112,7 @@ docs/API.md
 
 Swagger:
 
-https://autohub-demo.buckdns.org/swagger
+https://autohub-demo.duckdns.org/swagger
 
 
 ## Folder Structure
