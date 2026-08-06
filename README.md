@@ -65,11 +65,15 @@ https://autohub-demo.duckdns.org/swagger
 
 ### Swagger
 
-(image)
+<img width="1902" height="922" alt="image" src="https://github.com/user-attachments/assets/286835da-ffd5-4974-a312-affaf3509db7" />
+
 
 ### Grafana Dashboard
 
-(image)
+<img width="1900" height="872" alt="image" src="https://github.com/user-attachments/assets/b26d041c-3d6c-4bb0-a706-c1206e23bd20" />
+<img width="1892" height="867" alt="image" src="https://github.com/user-attachments/assets/bf0be837-53f9-40d5-a1a1-ce57c626ce41" />
+<img width="1900" height="865" alt="image" src="https://github.com/user-attachments/assets/410d11b7-44c7-46dd-bc19-72db197058e7" />
+
 
 
 
