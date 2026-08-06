@@ -153,11 +153,8 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(); // Access at /swagger/index.html
-}
+app.UseSwagger();
+app.UseSwaggerUI(); // Access at /swagger/index.html
 
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
